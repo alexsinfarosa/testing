@@ -28,7 +28,21 @@ const fetchSisterStationIdAndNetwork = params => {
   const url = `${protocol}//newa2.nrcc.cornell.edu/newaUtil/stationSisterInfo`
   const [id, network] = params.sid.split(" ")
   return axios(`${url}/${id}/${network}`)
-    .then(res => res.data.temp)
+    .then(res => {
+      let data = { ...res.data }
+      console.log(data)
+      // replacing old abbreviations with new ones
+      if (Object.keys(data).includes("prcp")) {
+        data["pcpn"] = data["prcp"]
+        delete data["prcp"]
+      }
+
+      const results = Object.keys(data).map(el =>
+        params.eleList.includes(el) ? el : null
+      )
+      console.log(results)
+      return results
+    })
     .catch(err =>
       console.log("Failed to load sister station id and network", err)
     )
@@ -89,13 +103,6 @@ export default async params => {
   sisParams.sid = sisterStationIdAndNetwork
 
   const sisterStation = await fetchSisterStationHourlyData(sisParams)
-
-  // relative humidity adjustments for icao stations
-  if (params.eleList.includes("rhum")) {
-    const rhum = sisterStation.data.map(d => {
-      return d[2]
-    })
-  }
 
   if (isSameYear(new Date(), new Date(params.edate))) {
     // get forecast hourly data

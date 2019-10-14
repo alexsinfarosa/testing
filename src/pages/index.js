@@ -59,7 +59,7 @@ const IndexPage = () => {
     }
   }, [stations])
 
-  console.log(selectedStation)
+  // console.log(selectedStation)
   return (
     <div>
       {isLoading && <div style={{ color: "red" }}>Loading..</div>}
