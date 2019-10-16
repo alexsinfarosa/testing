@@ -37,8 +37,9 @@ const IndexPage = () => {
         { vX: vX["temp"], prec: 2, units: "degreeF" },
         { vX: vX["rhum"] },
         { vX: vX["pcpn"], prec: 2 },
+        { vX: vX["srad"] },
       ],
-      eleList: ["temp", "rhum", "pcpn"],
+      eleList: ["temp", "rhum", "pcpn", "srad"],
     }
 
     dispatchSelectedStation({ type: "FETCH_INIT" })

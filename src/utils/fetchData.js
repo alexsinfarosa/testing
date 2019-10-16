@@ -3,6 +3,7 @@ import axiosWithDelimiter from "./axiosWithDelimiter"
 
 import { format, addDays, isSameYear } from "date-fns"
 import cleanFetchedData from "./cleanFetchedData"
+import { removeDuplicatesByValue } from "./utils"
 
 const protocol = window.location.protocol
 
@@ -28,21 +29,7 @@ const fetchSisterStationIdAndNetwork = params => {
   const url = `${protocol}//newa2.nrcc.cornell.edu/newaUtil/stationSisterInfo`
   const [id, network] = params.sid.split(" ")
   return axios(`${url}/${id}/${network}`)
-    .then(res => {
-      let data = { ...res.data }
-      console.log(data)
-      // replacing old abbreviations with new ones
-      if (Object.keys(data).includes("prcp")) {
-        data["pcpn"] = data["prcp"]
-        delete data["prcp"]
-      }
-
-      const results = Object.keys(data).map(el =>
-        params.eleList.includes(el) ? el : null
-      )
-      console.log(results)
-      return results
-    })
+    .then(res => removeDuplicatesByValue(res.data))
     .catch(err =>
       console.log("Failed to load sister station id and network", err)
     )
@@ -96,13 +83,20 @@ export default async params => {
   const currentStation = await fetchCurrentStationHourlyData(params)
 
   // get sister station id and network
-  const sisterStationIdAndNetwork = await fetchSisterStationIdAndNetwork(params)
+  const sisterStationIdAndNetworks = await fetchSisterStationIdAndNetwork(
+    params
+  )
+
+  const idAndNetworks = params.eleList
+    .map(el => sisterStationIdAndNetworks.find(obj => obj[el]))
+    .map((el, i) => (el !== undefined ? { ...el, i } : undefined))
+    .filter(d => d)
+  console.log(idAndNetworks)
 
   // get sister station hourly data
+  let sisterStation
   let sisParams = { ...params }
-  sisParams.sid = sisterStationIdAndNetwork
-
-  const sisterStation = await fetchSisterStationHourlyData(sisParams)
+  sisterStation = await fetchSisterStationHourlyData(sisParams)
 
   if (isSameYear(new Date(), new Date(params.edate))) {
     // get forecast hourly data

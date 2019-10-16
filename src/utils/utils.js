@@ -219,3 +219,24 @@ export const baskervilleEmin = (min, max, base) => {
       : (amt * Math.cos(t1) - (base - avg) * (3.14 / 2 - t1)) / 3.14
   }
 }
+
+export const removeDuplicatesByValue = obj => {
+  let data = { ...obj }
+  // replacing old abbreviations with new ones
+  if (Object.keys(data).includes("prcp")) {
+    data["pcpn"] = data["prcp"]
+    delete data["prcp"]
+  }
+
+  let values = []
+  Object.values(data).forEach(value => {
+    if (!values.includes(value)) {
+      values.push(value)
+    }
+  })
+
+  return values.map(value => {
+    const key = Object.keys(data).find(key => data[key] === value)
+    return { [key]: value }
+  })
+}
