@@ -220,23 +220,29 @@ export const baskervilleEmin = (min, max, base) => {
   }
 }
 
-export const removeDuplicatesByValue = obj => {
-  let data = { ...obj }
+export const reformatIdNetwork = (dataObj, eleList) => {
+  let data = { ...dataObj }
   // replacing old abbreviations with new ones
   if (Object.keys(data).includes("prcp")) {
     data["pcpn"] = data["prcp"]
     delete data["prcp"]
   }
 
-  let values = []
+  let uniqueStations = []
   Object.values(data).forEach(value => {
-    if (!values.includes(value)) {
-      values.push(value)
+    if (!uniqueStations.includes(value)) {
+      uniqueStations.push(value)
     }
   })
 
-  return values.map(value => {
-    const key = Object.keys(data).find(key => data[key] === value)
-    return { [key]: value }
+  return uniqueStations.map(idNet => {
+    let p = { [idNet]: [] }
+    eleList.forEach((el, i) => {
+      if (idNet === data[el]) {
+        const ll = { el, i }
+        p[idNet].push(ll)
+      }
+    })
+    return p
   })
 }

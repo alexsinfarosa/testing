@@ -3,7 +3,7 @@ import axiosWithDelimiter from "./axiosWithDelimiter"
 
 import { format, addDays, isSameYear } from "date-fns"
 import cleanFetchedData from "./cleanFetchedData"
-import { removeDuplicatesByValue } from "./utils"
+import { reformatIdNetwork } from "./utils"
 
 const protocol = window.location.protocol
 
@@ -29,7 +29,7 @@ const fetchSisterStationIdAndNetwork = params => {
   const url = `${protocol}//newa2.nrcc.cornell.edu/newaUtil/stationSisterInfo`
   const [id, network] = params.sid.split(" ")
   return axios(`${url}/${id}/${network}`)
-    .then(res => removeDuplicatesByValue(res.data))
+    .then(res => reformatIdNetwork(res.data, params.eleList))
     .catch(err =>
       console.log("Failed to load sister station id and network", err)
     )
@@ -86,12 +86,7 @@ export default async params => {
   const sisterStationIdAndNetworks = await fetchSisterStationIdAndNetwork(
     params
   )
-
-  const idAndNetworks = params.eleList
-    .map(el => sisterStationIdAndNetworks.find(obj => obj[el]))
-    .map((el, i) => (el !== undefined ? { ...el, i } : undefined))
-    .filter(d => d)
-  console.log(idAndNetworks)
+  console.log(sisterStationIdAndNetworks)
 
   // get sister station hourly data
   let sisterStation
