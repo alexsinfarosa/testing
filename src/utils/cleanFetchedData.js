@@ -18,14 +18,6 @@ export default (acisData, params) => {
 
     // sister station ---------------------------
     if (sisterStn) {
-      // console.log(sisterStn)
-      // relative humidity adjustments for icao stations
-      // if (params.eleList.includes("rhum")) {
-      // const rhum = sisterStn.map(d => {
-      //   return rhAdjustmentICAOStations(d[2])
-      // })
-      // }
-
       const sisterStnValues = averageMissingValues(
         flatten(sisterStn.map(arr => arr[i + 1]))
       )

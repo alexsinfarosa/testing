@@ -220,7 +220,7 @@ export const baskervilleEmin = (min, max, base) => {
   }
 }
 
-export const reformatIdNetwork = (dataObj, eleList) => {
+export const formatIdNetwork = (dataObj, eleList) => {
   let data = { ...dataObj }
   // replacing old abbreviations with new ones
   if (Object.keys(data).includes("prcp")) {
@@ -235,14 +235,16 @@ export const reformatIdNetwork = (dataObj, eleList) => {
     }
   })
 
-  return uniqueStations.map(idNet => {
-    let p = { [idNet]: [] }
+  let results = {}
+  uniqueStations.forEach(idNet => {
+    let p = []
     eleList.forEach((el, i) => {
       if (idNet === data[el]) {
-        const ll = { el, i }
-        p[idNet].push(ll)
+        p.push(i + 1)
       }
     })
-    return p
+    results[idNet] = p
   })
+
+  return results
 }

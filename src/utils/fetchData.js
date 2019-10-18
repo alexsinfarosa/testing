@@ -3,7 +3,7 @@ import axiosWithDelimiter from "./axiosWithDelimiter"
 
 import { format, addDays, isSameYear } from "date-fns"
 import cleanFetchedData from "./cleanFetchedData"
-import { reformatIdNetwork } from "./utils"
+import { formatIdNetwork } from "./utils"
 
 const protocol = window.location.protocol
 
@@ -29,19 +29,35 @@ const fetchSisterStationIdAndNetwork = params => {
   const url = `${protocol}//newa2.nrcc.cornell.edu/newaUtil/stationSisterInfo`
   const [id, network] = params.sid.split(" ")
   return axios(`${url}/${id}/${network}`)
-    .then(res => reformatIdNetwork(res.data, params.eleList))
+    .then(res => formatIdNetwork(res.data, params.eleList))
     .catch(err =>
       console.log("Failed to load sister station id and network", err)
     )
 }
 
 // Fetch sister station hourly data --------------------------------------------------------
-export const fetchSisterStationHourlyData = params => {
+export const fetchSisterStationHourlyData = async (params, idAndNetwork) => {
   const url = `${protocol}//data.rcc-acis.org/StnData`
-  return axios
-    .post(url, params)
-    .then(res => errorFromAcis(res.data))
-    .catch(err => console.log("Failed to load sister station data ", err))
+
+  let req = Object.keys(idAndNetwork).map(idNet => {
+    let currentParams = { ...params }
+    currentParams.sid = idNet
+    return axiosWithDelimiter
+      .post(url, currentParams)
+      .then(res =>
+        res.data.data.map(day =>
+          idAndNetwork[idNet].map(idx => [idx, day[idx]])
+        )
+      )
+      .catch(err => console.log("Failed to load sister station data ", err))
+  })
+
+  const stns = await Promise.all(req)
+  const res = new Array(stns[0].length).fill([])
+  stns.forEach(stn =>
+    stn.map((day, i) => day.map(el => (res[i][el[0]] = el[1])))
+  )
+  return res
 }
 
 // Fetch forecast hourly data --------------------------------------------------------------
@@ -86,12 +102,12 @@ export default async params => {
   const sisterStationIdAndNetworks = await fetchSisterStationIdAndNetwork(
     params
   )
-  console.log(sisterStationIdAndNetworks)
 
   // get sister station hourly data
-  let sisterStation
-  let sisParams = { ...params }
-  sisterStation = await fetchSisterStationHourlyData(sisParams)
+  const sisterStation = await fetchSisterStationHourlyData(
+    params,
+    sisterStationIdAndNetworks
+  )
 
   if (isSameYear(new Date(), new Date(params.edate))) {
     // get forecast hourly data
@@ -101,7 +117,7 @@ export default async params => {
 
   results["currentStn"] = currentStation.data
   results["tzo"] = currentStation.meta.tzo
-  results["sisterStn"] = sisterStation.data
+  results["sisterStn"] = sisterStation
 
   // clean data
   console.log(results, params)
