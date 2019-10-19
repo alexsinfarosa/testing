@@ -11,6 +11,7 @@ import dataFetchReducer from "../utils/reducers/dataFetchReducer"
 const IndexPage = () => {
   // ALL STATIONS ---------------------------------------------------
   const { data: stations, isLoading, isError } = useFetchAllStations()
+  const myStation = stations.find(stn => stn.name === "Geneva")
 
   // SLECTED STATION ------------------------------------------------
   const [selectedStation, dispatchSelectedStation] = React.useReducer(
@@ -28,6 +29,8 @@ const IndexPage = () => {
     )
 
     const params = {
+      id: stationIdAdjustment(stn),
+      network: stn.network,
       sid: `${stationIdAdjustment(stn)} ${stn.network}`,
       sdate: `${new Date().getFullYear() - 1}-12-31`,
       edate: `${format(new Date(), "yyyy-MM-dd")}`,
@@ -56,7 +59,7 @@ const IndexPage = () => {
 
   React.useEffect(() => {
     if (stations.length !== 0) {
-      fetchHourlyData(stations[0])
+      fetchHourlyData(myStation)
     }
   }, [stations])
 
@@ -68,7 +71,7 @@ const IndexPage = () => {
         <div>There was an error</div>
       ) : (
         <div>
-          <pre>{JSON.stringify(stations[0], null, 2)}</pre>
+          <pre>{JSON.stringify(myStation, null, 2)}</pre>
         </div>
       )}
     </div>

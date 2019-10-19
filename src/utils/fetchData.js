@@ -3,7 +3,7 @@ import axiosWithDelimiter from "./axiosWithDelimiter"
 
 import { format, addDays, isSameYear } from "date-fns"
 import cleanFetchedData from "./cleanFetchedData"
-import { formatIdNetwork } from "./utils"
+import { formatIdNetwork, rhAdjustmentICAOStations } from "./utils"
 
 const protocol = window.location.protocol
 
@@ -44,19 +44,32 @@ export const fetchSisterStationHourlyData = async (params, idAndNetwork) => {
     currentParams.sid = idNet
     return axiosWithDelimiter
       .post(url, currentParams)
-      .then(res =>
-        res.data.data.map(day =>
+      .then(res => {
+        // console.log(res.data.data)
+        return res.data.data.map(day =>
           idAndNetwork[idNet].map(idx => [idx, day[idx]])
         )
-      )
+      })
       .catch(err => console.log("Failed to load sister station data ", err))
   })
 
   const stns = await Promise.all(req)
-  const res = new Array(stns[0].length).fill([])
+
+  let res = new Array(stns[0].length).fill([])
   stns.forEach(stn =>
     stn.map((day, i) => day.map(el => (res[i][el[0]] = el[1])))
   )
+  if (params.network === "newa") {
+    console.log("get inside")
+    // get rhum index
+    const rhumIdx = params.eleList.findIndex(el => el === "rhum")
+    if (rhumIdx !== -1) {
+      res.forEach(
+        row => (row[rhumIdx + 1] = rhAdjustmentICAOStations(row[rhumIdx + 1]))
+      )
+    }
+  }
+  console.log(res)
   return res
 }
 
@@ -70,13 +83,17 @@ const fetchHourlyForcestData = async params => {
   let req = params.eleList.map(el =>
     axiosWithDelimiter
       .get(`${url}/${id}/${network}/${el}/${params.sdate}/${plusFiveDays}`)
-      .then(res => res.data)
+      .then(res => {
+        // console.log(res.data)
+        return [el, res.data]
+      })
       .catch(err =>
         console.log(`Failed to load ${el} hourly forecast data`, err)
       )
   )
 
   const data = await Promise.all(req)
+  console.log(data)
   let results = data[0].data
 
   data.forEach((el, i) => {

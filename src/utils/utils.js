@@ -40,10 +40,15 @@ export const calculateGdd = (dailyData, base = 50) => {
 
 /////////////////////////////////////////////////////////
 // Handling Relative Humidity Adjustment for ICAO stations
-export const rhAdjustmentICAOStations = rhArrValues =>
-  rhArrValues.map(rh =>
-    rh === "M" ? rh : Number(rh) / (0.0047 * Number(rh) + 0.53)
-  )
+export const rhAdjustmentICAOStations = rhArrValues => {
+  return rhArrValues.map(rh => {
+    console.log((Number(rh) / (0.0047 * Number(rh) + 0.53)).toFixed(2))
+    return rh === "M"
+      ? rh
+      : (Number(rh) / (0.0047 * Number(rh) + 0.53)).toFixed(2)
+  })
+}
+
 /////////////////////////////////////////////////////////
 
 // Handling station ID adjustment for some networks or states
@@ -235,7 +240,7 @@ export const formatIdNetwork = (dataObj, eleList) => {
     }
   })
 
-  let results = {}
+  let allSisterStations = {}
   uniqueStations.forEach(idNet => {
     let p = []
     eleList.forEach((el, i) => {
@@ -243,8 +248,14 @@ export const formatIdNetwork = (dataObj, eleList) => {
         p.push(i + 1)
       }
     })
-    results[idNet] = p
+    allSisterStations[idNet] = p
   })
 
+  let results = {}
+  for (let [key, value] of Object.entries(allSisterStations)) {
+    if (value.length !== 0) {
+      results[key] = value
+    }
+  }
   return results
 }
