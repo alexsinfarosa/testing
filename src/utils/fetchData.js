@@ -55,13 +55,15 @@ export const fetchSisterStationHourlyData = async (params, idAndNetwork) => {
 
   const stns = await Promise.all(req)
 
-  let res = new Array(stns[0].length).fill([])
+  let res = new Array(stns[0].length)
+    .fill([])
+    .map(d => new Array(params.eleList.length + 1).fill([]))
+
   stns.forEach(stn =>
     stn.map((day, i) => day.map(el => (res[i][el[0]] = el[1])))
   )
+
   if (params.network === "newa") {
-    console.log("get inside")
-    // get rhum index
     const rhumIdx = params.eleList.findIndex(el => el === "rhum")
     if (rhumIdx !== -1) {
       res.forEach(
@@ -69,7 +71,7 @@ export const fetchSisterStationHourlyData = async (params, idAndNetwork) => {
       )
     }
   }
-  console.log(res)
+  // console.log(res)
   return res
 }
 
