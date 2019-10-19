@@ -41,9 +41,10 @@ export const calculateGdd = (dailyData, base = 50) => {
 /////////////////////////////////////////////////////////
 // Handling Relative Humidity Adjustment for ICAO stations
 export const rhAdjustmentICAOStations = rhArrValues =>
-  rhArrValues.map(rh =>
-    rh === "M" ? rh : (Number(rh) / (0.0047 * Number(rh) + 0.53)).toFixed(2)
-  )
+  rhArrValues.map(rh => {
+    const val = (Number(rh) / (0.0047 * Number(rh) + 0.53)).toFixed(0)
+    return rh === "M" ? rh : typeof rh === "string" ? val : Number(val)
+  })
 
 /////////////////////////////////////////////////////////
 

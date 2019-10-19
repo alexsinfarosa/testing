@@ -82,12 +82,23 @@ const fetchHourlyForcestData = async params => {
   const plusFiveDays = format(addDays(new Date(), 5), "yyyy-MM-dd")
   const [id, network] = params.sid.split(" ")
 
-  let req = params.eleList.map(el =>
+  let elements = [...params.eleList, "pop"]
+  console.log(elements)
+
+  let req = elements.map(el =>
     axiosWithDelimiter
       .get(`${url}/${id}/${network}/${el}/${params.sdate}/${plusFiveDays}`)
       .then(res => {
         // console.log(res.data)
-        return [el, res.data]
+        let data = res.data.data
+        if (el === "rhum") {
+          data = res.data.data.map(day => [
+            day[0],
+            rhAdjustmentICAOStations(day[1]),
+          ])
+        }
+
+        return [el, data]
       })
       .catch(err =>
         console.log(`Failed to load ${el} hourly forecast data`, err)
@@ -96,7 +107,7 @@ const fetchHourlyForcestData = async params => {
 
   const data = await Promise.all(req)
   console.log(data)
-  let results = data[0].data
+  let results = data[0]
 
   data.forEach((el, i) => {
     if (i > 0) {
