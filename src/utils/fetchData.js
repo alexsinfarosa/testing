@@ -83,7 +83,6 @@ const fetchHourlyForcestData = async params => {
   const [id, network] = params.sid.split(" ")
 
   let elements = [...params.eleList, "pop"]
-  console.log(elements)
 
   let req = elements.map(el =>
     axiosWithDelimiter
@@ -107,16 +106,19 @@ const fetchHourlyForcestData = async params => {
 
   const data = await Promise.all(req)
   console.log(data)
-  let results = data[0]
+  let results = new Array(data[0][1].length)
+    .fill([])
+    .map(d => new Array(elements.length + 1).fill([]))
 
-  data.forEach((el, i) => {
-    if (i > 0) {
-      el.data.forEach((day, t) => {
-        results[t].push(day[1])
-      })
+  data.forEach(el => {
+    const idx = elements.findIndex(e => e === el[0])
+    if (idx !== -1) {
+      console.log("yo")
+      data[0][1].forEach((d, i) => (results[i][idx] = el[1][i][1]))
     }
   })
-  // console.log(results)
+  console.log("ciccio")
+  console.log(results)
   return results
 }
 
