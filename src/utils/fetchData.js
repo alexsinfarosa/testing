@@ -105,19 +105,18 @@ const fetchHourlyForcestData = async params => {
   )
 
   const data = await Promise.all(req)
-  console.log(data)
+
   let results = new Array(data[0][1].length)
     .fill([])
     .map(d => new Array(elements.length + 1).fill([]))
 
   data.forEach(el => {
     const idx = elements.findIndex(e => e === el[0])
-    if (idx !== -1) {
-      console.log("yo")
+    if (idx !== -1 && el[1].length !== 0) {
       data[0][1].forEach((d, i) => (results[i][idx] = el[1][i][1]))
     }
   })
-  console.log("ciccio")
+
   console.log(results)
   return results
 }
