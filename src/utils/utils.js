@@ -30,7 +30,7 @@ export const setParams = (stn, sdate, edate, eleList) => {
     if (el === "temp") {
       return { vX: vX[el], prec: 2, units: "degreeF" }
     } else if (el === "rhum") {
-      return { vX: vX[el], prec: 2 }
+      return { vX: vX[el] }
     } else {
       return { vX: vX[el] }
     }

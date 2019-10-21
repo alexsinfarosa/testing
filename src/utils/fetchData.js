@@ -3,7 +3,13 @@ import axiosWithDelimiter from "./axiosWithDelimiter"
 
 import { format, addDays, isSameYear } from "date-fns"
 import cleanFetchedData from "./cleanFetchedData"
-import { formatIdNetwork, arrToObj, arrToObjForecast, setParams } from "./utils"
+import {
+  formatIdNetwork,
+  arrToObj,
+  arrToObjForecast,
+  setParams,
+  rhAdjustmentICAOStations,
+} from "./utils"
 
 const protocol = window.location.protocol
 
@@ -95,6 +101,9 @@ const fetchHourlyForecastData = async params => {
       "qpf",
     ]
   }
+  if (forecastElementList.includes("lwet")) {
+    forecastElementList = forecastElementList.filter(el => el !== "lwet")
+  }
 
   let req = forecastElementList.map(el =>
     axiosWithDelimiter
@@ -143,17 +152,53 @@ export default async (params, allStations) => {
     sisterStationIdAndNetworks,
     allStations
   )
-  results["sisterStn"] = sisterStn
 
+  if (params.network === "icao") {
+    let sisterStnAdjusted = []
+    sisterStn.forEach(day => {
+      let p = { ...day }
+      p["rhum"] = rhAdjustmentICAOStations(day["rhum"])
+      sisterStnAdjusted.push(p)
+    })
+    results["sisterStn"] = sisterStnAdjusted
+  } else {
+    results["sisterStn"] = sisterStn
+  }
+
+  // FORECAST -----------------------------------------------------------
   if (isSameYear(new Date(), new Date(params.edate))) {
     // get forecast hourly data
-    results["forecast"] = await fetchHourlyForecastData(params)
+    const forecast = await fetchHourlyForecastData(params)
+    let res = []
+    const keys = params.eleList
+
+    forecast.forEach(day => {
+      let p = { ...day }
+      if (keys.includes("rhum") && params.network === "icao") {
+        p["rhum"] = rhAdjustmentICAOStations(day["rhum"])
+      }
+      if (keys.includes("pcpn")) {
+        const pcpn = day["pop12"].map((p, i) =>
+          p === "M" ? p : p < 60 ? 0 : day["qpf"][i]
+        )
+        p["pcpn"] = pcpn
+        delete p["pop12"]
+        delete p["qpf"]
+      }
+      if (keys.includes("lwet")) {
+        const adjRhum = rhAdjustmentICAOStations(day["rhum"])
+        const lwet = adjRhum.map(rh => (p === "M" ? p : rh >= 90 ? 60 : 0))
+        p["lwet"] = lwet
+      }
+      res.push(p)
+    })
+    results["forecast"] = res
   }
 
   // clean data
   console.log(results)
-  const cleaned = cleanFetchedData(results, params)
+  // const cleaned = cleanFetchedData(results, params)
 
   // console.log(cleaned)
-  return cleaned
+  // return cleaned
 }
