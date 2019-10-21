@@ -1,4 +1,43 @@
 import moment from "moment-timezone"
+import vXdef from "../utils/vXdef.json"
+import invertBy from "lodash.invertby"
+
+export const arrToObj = (acis, eleList) => {
+  return acis.data.map(day => {
+    let p = { date: day[0] }
+    day.slice(1).map((el, i) => (p[eleList[i]] = el))
+    return p
+  })
+}
+
+export const setParams = (stn, sdate, edate, eleList) => {
+  const vX = JSON.parse(JSON.stringify(vXdef)).find(
+    e => e.network === stn.network
+  )
+  delete vX["network"]
+
+  const sid = `${stationIdAdjustment(stn)} ${stn.network}`
+
+  const elems = eleList.map(el => {
+    if (el === "temp") {
+      return { vX: vX[el], prec: 2, units: "degreeF" }
+    } else if (el === "rhum") {
+      return { vX: vX[el], prec: 2 }
+    } else {
+      return { vX: vX[el] }
+    }
+  })
+
+  return {
+    ...stn,
+    sid,
+    meta: "tzo",
+    sdate,
+    edate,
+    elems,
+    eleList,
+  }
+}
 
 export const calculateGdd = (dailyData, base = 50) => {
   let cdd = 0
@@ -224,35 +263,24 @@ export const baskervilleEmin = (min, max, base) => {
 
 export const formatIdNetwork = (dataObj, eleList) => {
   let data = { ...dataObj }
+
   // replacing old abbreviations with new ones
   if (Object.keys(data).includes("prcp")) {
     data["pcpn"] = data["prcp"]
     delete data["prcp"]
   }
 
-  let uniqueStations = []
-  Object.values(data).forEach(value => {
-    if (!uniqueStations.includes(value)) {
-      uniqueStations.push(value)
-    }
-  })
-
-  let allSisterStations = {}
-  uniqueStations.forEach(idNet => {
-    let p = []
-    eleList.forEach((el, i) => {
-      if (idNet === data[el]) {
-        p.push(i + 1)
-      }
-    })
-    allSisterStations[idNet] = p
-  })
+  let inverted = invertBy(data)
 
   let results = {}
-  for (let [key, value] of Object.entries(allSisterStations)) {
-    if (value.length !== 0) {
-      results[key] = value
-    }
+  for (let [key, value] of Object.entries(inverted)) {
+    eleList.forEach(el => {
+      if (value.includes(el)) {
+        const filteredValues = value.filter(el => eleList.includes(el))
+        results[key] = filteredValues
+      }
+    })
   }
+
   return results
 }
