@@ -3,10 +3,18 @@ import vXdef from "../utils/vXdef.json"
 import invertBy from "lodash.invertby"
 
 export const arrToObj = (acis, eleList) => {
-  return acis.data.map(day => {
+  const { meta, data } = acis
+  const res = data.map(day => {
     let p = { date: day[0] }
     day.slice(1).map((el, i) => (p[eleList[i]] = el))
     return p
+  })
+  return { meta, data: res }
+}
+
+export const arrToObjForecast = (acis, element) => {
+  return acis.data.map(day => {
+    return { date: day[0], [element]: day[1] }
   })
 }
 

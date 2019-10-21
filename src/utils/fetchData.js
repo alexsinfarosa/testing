@@ -3,12 +3,7 @@ import axiosWithDelimiter from "./axiosWithDelimiter"
 
 import { format, addDays, isSameYear } from "date-fns"
 import cleanFetchedData from "./cleanFetchedData"
-import {
-  formatIdNetwork,
-  rhAdjustmentICAOStations,
-  arrToObj,
-  setParams,
-} from "./utils"
+import { formatIdNetwork, arrToObj, arrToObjForecast, setParams } from "./utils"
 
 const protocol = window.location.protocol
 
@@ -25,7 +20,10 @@ export const fetchCurrentStationHourlyData = params => {
   const url = `${protocol}//data.rcc-acis.org/StnData`
   return axios
     .post(url, params)
-    .then(res => arrToObj(errorFromAcis(res.data), params.eleList))
+    .then(res => {
+      // console.log(res.data)
+      return arrToObj(errorFromAcis(res.data), params.eleList)
+    })
     .catch(err => console.log("Failed to load station data ", err))
 }
 
@@ -62,16 +60,62 @@ export const fetchSisterStationHourlyData = async (
   let req = sisStations.map(stn => {
     return axiosWithDelimiter
       .post(url, stn)
-      .then(res => arrToObj(errorFromAcis(res.data), stn.eleList))
+      .then(res => {
+        // console.log(res.data)
+        return arrToObj(errorFromAcis(res.data), stn.eleList)
+      })
       .catch(err => console.log("Failed to load sister station data ", err))
   })
 
   const res = await Promise.all(req)
   if (res.length > 1) {
-    let first = [...res[0]]
-    res.slice(1)[0].forEach((day, i) => {
+    let first = [...res[0].data]
+    res.slice(1)[0].data.forEach((day, i) => {
       delete day.date
       first[i] = { ...first[i], ...day }
+    })
+    return first
+  } else {
+    return res[0].data
+  }
+}
+
+// Fetch forecast hourly data --------------------------------------------------------------
+const fetchHourlyForecastData = async params => {
+  const url = `${protocol}//newa2.nrcc.cornell.edu/newaUtil/getFcstData`
+  // always need to add 5 days
+  const plusFiveDays = format(addDays(new Date(), 5), "yyyy-MM-dd")
+  const { id, network } = params
+
+  let forecastElementList = [...params.eleList]
+  if (forecastElementList.includes("pcpn")) {
+    forecastElementList = [
+      ...forecastElementList.filter(e => e !== "pcpn"),
+      "pop12",
+      "qpf",
+    ]
+  }
+
+  let req = forecastElementList.map(el =>
+    axiosWithDelimiter
+      .get(`${url}/${id}/${network}/${el}/${params.sdate}/${plusFiveDays}`)
+      .then(res => {
+        // console.log(el, res.data)
+        return arrToObjForecast(errorFromAcis(res.data), el)
+      })
+      .catch(err =>
+        console.log(`Failed to load ${el} hourly forecast data`, err)
+      )
+  )
+
+  const res = await Promise.all(req)
+  if (res.length > 1) {
+    let first = [...res[0]]
+    res.slice(1).forEach(stn => {
+      stn.forEach((day, j) => {
+        delete day.date
+        first[j] = { ...first[j], ...day }
+      })
     })
     return first
   } else {
@@ -79,63 +123,14 @@ export const fetchSisterStationHourlyData = async (
   }
 }
 
-// Fetch forecast hourly data --------------------------------------------------------------
-const fetchHourlyForcestData = async params => {
-  const url = `${protocol}//newa2.nrcc.cornell.edu/newaUtil/getFcstData`
-  // always need to add 5 days
-  const plusFiveDays = format(addDays(new Date(), 5), "yyyy-MM-dd")
-  const [id, network] = params.sid.split(" ")
-
-  let elements = [...params.eleList, "pop"]
-
-  let req = elements.map(el =>
-    axiosWithDelimiter
-      .get(`${url}/${id}/${network}/${el}/${params.sdate}/${plusFiveDays}`)
-      .then(res => {
-        // console.log(res.data)
-        let data = res.data.data
-        if (el === "rhum") {
-          data = res.data.data.map(day => [
-            day[0],
-            rhAdjustmentICAOStations(day[1]),
-          ])
-        }
-
-        return [el, data]
-      })
-      .catch(err =>
-        console.log(`Failed to load ${el} hourly forecast data`, err)
-      )
-  )
-
-  const data = await Promise.all(req)
-
-  let results = new Array(data[0][1].length)
-    .fill([])
-    .map(d => new Array(elements.length + 1).fill([]))
-
-  data.forEach((el, j) => {
-    const idx = elements.findIndex(e => e === el[0])
-    if (idx !== -1 && el[1].length !== 0) {
-      if (j === 0) {
-        data[0][1].forEach((d, i) => (results[i][0] = el[1][i][0]))
-      }
-      data[0][1].forEach((d, i) => (results[i][idx + 1] = el[1][i][1]))
-    }
-  })
-
-  // console.log(results)
-  return results
-}
-
 // Main Function
 export default async (params, allStations) => {
-  // console.log(params)
   let results = {}
 
   // get current station hourly data
   const currentStation = await fetchCurrentStationHourlyData(params)
-  console.log({ currentStation })
+  results["currentStn"] = currentStation.data
+  results["tzo"] = currentStation.meta.tzo
 
   // get sister station id and network
   const sisterStationIdAndNetworks = await fetchSisterStationIdAndNetwork(
@@ -143,25 +138,20 @@ export default async (params, allStations) => {
   )
 
   // get sister station hourly data
-  const sisterStation = await fetchSisterStationHourlyData(
+  const sisterStn = await fetchSisterStationHourlyData(
     params,
     sisterStationIdAndNetworks,
     allStations
   )
-  console.log({ sisterStation })
+  results["sisterStn"] = sisterStn
 
   if (isSameYear(new Date(), new Date(params.edate))) {
     // get forecast hourly data
-    const forecastData = await fetchHourlyForcestData(params)
-    results["forecast"] = forecastData
+    results["forecast"] = await fetchHourlyForecastData(params)
   }
 
-  results["currentStn"] = currentStation.data
-  results["tzo"] = currentStation.meta.tzo
-  results["sisterStn"] = sisterStation
-
   // clean data
-  // console.log(results, params)
+  console.log(results)
   const cleaned = cleanFetchedData(results, params)
 
   // console.log(cleaned)

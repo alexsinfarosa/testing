@@ -26,7 +26,7 @@ const IndexPage = () => {
   const fetchHourlyData = async stn => {
     const sdate = `${new Date().getFullYear() - 1}-12-31`
     const edate = `${format(new Date(), "yyyy-MM-dd")}`
-    const eleList = ["temp"]
+    const eleList = ["temp", "rhum", "pcpn"]
     const params = setParams(stn, sdate, edate, eleList)
 
     dispatchSelectedStation({ type: "FETCH_INIT" })
