@@ -11,7 +11,8 @@ import dataFetchReducer from "../utils/reducers/dataFetchReducer"
 const IndexPage = () => {
   // ALL STATIONS ---------------------------------------------------
   const { data: stations, isLoading, isError } = useFetchAllStations()
-  const myStation = stations.find(stn => stn.name === "Geneva")
+  // const myStation = stations.find(stn => stn.name === "Geneva")
+  const myStation = stations.find(stn => stn.id === "kalb")
 
   // SLECTED STATION ------------------------------------------------
   const [selectedStation, dispatchSelectedStation] = React.useReducer(
@@ -40,9 +41,8 @@ const IndexPage = () => {
         { vX: vX["temp"], prec: 2, units: "degreeF" },
         { vX: vX["rhum"] },
         { vX: vX["pcpn"], prec: 2 },
-        { vX: vX["srad"] },
       ],
-      eleList: ["temp", "rhum", "pcpn", "srad"],
+      eleList: ["temp", "rhum", "pcpn"],
     }
 
     dispatchSelectedStation({ type: "FETCH_INIT" })

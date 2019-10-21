@@ -17,6 +17,7 @@ const errorFromAcis = data => {
 
 // Fetch selected station hourly data ---------------------------------------------------
 export const fetchCurrentStationHourlyData = params => {
+  console.log(params)
   const url = `${protocol}//data.rcc-acis.org/StnData`
   return axios
     .post(url, params)
@@ -45,10 +46,10 @@ export const fetchSisterStationHourlyData = async (params, idAndNetwork) => {
     return axiosWithDelimiter
       .post(url, currentParams)
       .then(res => {
-        // console.log(res.data.data)
-        return res.data.data.map(day =>
-          idAndNetwork[idNet].map(idx => [idx, day[idx]])
-        )
+        console.log(res.data.data)
+        return res.data.data.map(day => {
+          return idAndNetwork[idNet].map(idx => [idx, day[idx]])
+        })
       })
       .catch(err => console.log("Failed to load sister station data ", err))
   })
@@ -110,14 +111,17 @@ const fetchHourlyForcestData = async params => {
     .fill([])
     .map(d => new Array(elements.length + 1).fill([]))
 
-  data.forEach(el => {
+  data.forEach((el, j) => {
     const idx = elements.findIndex(e => e === el[0])
     if (idx !== -1 && el[1].length !== 0) {
-      data[0][1].forEach((d, i) => (results[i][idx] = el[1][i][1]))
+      if (j === 0) {
+        data[0][1].forEach((d, i) => (results[i][0] = el[1][i][0]))
+      }
+      data[0][1].forEach((d, i) => (results[i][idx + 1] = el[1][i][1]))
     }
   })
 
-  console.log(results)
+  // console.log(results)
   return results
 }
 
