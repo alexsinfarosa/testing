@@ -7,11 +7,11 @@ import { setParams } from "../utils/utils"
 import { format } from "date-fns"
 import dataFetchReducer from "../utils/reducers/dataFetchReducer"
 
+import Select from "react-select"
+
 const IndexPage = () => {
   // ALL STATIONS ---------------------------------------------------
-  const { data: stations, isLoading, isError } = useFetchAllStations()
-  const myStation = stations.find(stn => stn.name === "Geneva")
-  // const myStation = stations.find(stn => stn.id === "kalb")
+  const { data: stations } = useFetchAllStations()
 
   // SLECTED STATION ------------------------------------------------
   const [selectedStation, dispatchSelectedStation] = React.useReducer(
@@ -34,28 +34,50 @@ const IndexPage = () => {
       const res = await fetchData(params, stations)
       dispatchSelectedStation({
         type: "FETCH_SUCCESS",
-        payload: res,
+        payload: { ...params, ...res },
       })
     } catch (error) {
-      dispatchSelectedStation({ type: "FETCH_FAILURE" })
+      dispatchSelectedStation({ type: "FETCH_FAILURE", error })
     }
   }
 
-  React.useEffect(() => {
-    fetchHourlyData(myStation)
-  }, [myStation])
-
   // console.log(selectedStation)
+  const handleChange = stn => {
+    const station = stations.find(s => s.id === stn.value)
+    fetchHourlyData(station)
+  }
+
+  const options = stations.map(stn => {
+    return { value: stn.id, label: stn.name }
+  })
   return (
-    <div>
-      {isLoading && <div style={{ color: "red" }}>Loading..</div>}
-      {isError ? (
-        <div>There was an error</div>
-      ) : (
-        <div>
-          <pre>{JSON.stringify(myStation, null, 2)}</pre>
-        </div>
-      )}
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        padding: 24,
+      }}
+    >
+      <div style={{ width: 300 }}>
+        <Select
+          options={options}
+          onChange={handleChange}
+          autoFocus
+          isClearable
+          closeMenuOnSelect={false}
+        ></Select>
+      </div>
+
+      <div
+        style={{
+          minWidth: 300,
+          height: "100vh",
+          overflowY: "scroll",
+          overflowX: "hidden",
+        }}
+      >
+        <pre>{JSON.stringify(selectedStation, null, 2)}</pre>
+      </div>
     </div>
   )
 }
