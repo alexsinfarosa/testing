@@ -28,7 +28,7 @@ export const setParams = (stn, sdate, edate, eleList) => {
 
   const elems = eleList.map(el => {
     if (el === "temp") {
-      return { vX: vX[el], prec: 2, units: "degreeF" }
+      return { vX: vX[el], prec: 1, units: "degreeF" }
     } else if (el === "rhum") {
       return { vX: vX[el] }
     } else {
