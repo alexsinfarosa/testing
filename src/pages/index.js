@@ -42,9 +42,7 @@ const IndexPage = () => {
   }
 
   React.useEffect(() => {
-    if (stations.length !== 0) {
-      fetchHourlyData(myStation)
-    }
+    fetchHourlyData(myStation)
   }, [myStation])
 
   // console.log(selectedStation)
