@@ -48,7 +48,29 @@ const IndexPage = () => {
   }
 
   const options = stations.map(stn => {
-    return { value: stn.id, label: stn.name }
+    const Item = ({ stn }) => (
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <span>
+          {stn.name},{" "}
+          <span
+            style={{
+              fontWeight: "bold",
+              fontStyle: "italic",
+              fontSize: "0.8rem",
+            }}
+          >
+            {stn.state}
+          </span>
+        </span>
+        <span
+          style={{ textAlign: "right", color: "#CCCCCC", fontSize: "0.8rem" }}
+        >
+          {stn.network}
+        </span>
+      </div>
+    )
+
+    return { value: stn.id, label: <Item stn={stn}></Item> }
   })
   return (
     <div
@@ -58,14 +80,8 @@ const IndexPage = () => {
         padding: 24,
       }}
     >
-      <div style={{ width: 300 }}>
-        <Select
-          options={options}
-          onChange={handleChange}
-          autoFocus
-          isClearable
-          closeMenuOnSelect={false}
-        ></Select>
+      <div style={{ width: 400 }}>
+        <Select options={options} onChange={handleChange} autoFocus></Select>
       </div>
 
       <div
