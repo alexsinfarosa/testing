@@ -88,6 +88,7 @@ export const fetchSisterStationHourlyData = async (
 
 // Fetch forecast hourly data --------------------------------------------------------------
 const fetchHourlyForecastData = async params => {
+  // available forecast variables:  ['temp','rhum','wspd','tsky','qpf','dwpt','pop12']
   const url = `${protocol}//newa2.nrcc.cornell.edu/newaUtil/getFcstData`
   // always need to add 5 days
   const plusFiveDays = format(addDays(new Date(), 5), "yyyy-MM-dd")
@@ -145,6 +146,7 @@ export default async (params, allStations) => {
   const sisterStationIdAndNetworks = await fetchSisterStationIdAndNetwork(
     params
   )
+  // console.log(sisterStationIdAndNetworks)
 
   // get sister station hourly data
   const sisterStn = await fetchSisterStationHourlyData(
@@ -192,13 +194,14 @@ export default async (params, allStations) => {
       }
       res.push(p)
     })
+    // console.log(res)
     results["forecast"] = res
   }
 
   // clean data
-  console.log(results)
-  // const cleaned = cleanFetchedData(results, params)
+  // console.log(results)
+  const cleaned = cleanFetchedData(results, params)
 
-  // console.log(cleaned)
-  // return cleaned
+  console.log(cleaned)
+  return cleaned
 }

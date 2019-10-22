@@ -45,7 +45,7 @@ const IndexPage = () => {
     if (stations.length !== 0) {
       fetchHourlyData(myStation)
     }
-  }, [stations])
+  }, [myStation])
 
   // console.log(selectedStation)
   return (

@@ -1,104 +1,113 @@
-import {
-  averageMissingValues,
-  flatten,
-  addHourToDate,
-  formatTime,
-  // rhAdjustmentICAOStations,
-} from "./utils"
+import { averageMissingValues, formatTime } from "./utils"
 
-export default (acisData, params) => {
+export default acisData => {
   const { currentStn, sisterStn, forecast, tzo } = acisData
-  let data = params.eleList.map((el, i) => {
-    let results = []
 
-    // current station -------------------------
-    // const currentStnValues = averageMissingValues(
-    //   flatten(currentStn.map(arr => arr[i + 1]))
-    // )
-    console.log(currentStn)
-    const currentStnValues = currentStn.map(day => {
-      const keys = Object.keys(day).filter(k => k !== "date")
-      return keys.map(el => day[el])
+  // current station -------------------------
+  let results = []
+  currentStn.forEach(el => {
+    let p = { ...el }
+    for (let [key, val] of Object.entries(el)) {
+      if (key !== "date") {
+        p[key] = averageMissingValues(val)
+      }
+    }
+    results.push(p)
+  })
+  // console.log(results)
+
+  // sister station ---------------------------
+  let sisterStnAveraged = []
+  if (sisterStn) {
+    sisterStn.forEach(el => {
+      let p = { ...el }
+      for (let [key, val] of Object.entries(el)) {
+        if (key !== "date") {
+          p[key] = averageMissingValues(val)
+        }
+      }
+      sisterStnAveraged.push(p)
     })
-    console.log({ currentStnValues })
+    // console.log(sisterStnAveraged)
+  }
 
-    // sister station ---------------------------
-    if (false) {
-      const sisterStnValues = averageMissingValues(
-        flatten(sisterStn.map(arr => arr[i + 1]))
-      )
-      // replace missing values with sister station
-      results = currentStnValues.map((val, j) =>
-        val === "M" ? sisterStnValues[j] : val
-      )
+  results = results.map((day, i) => {
+    for (let [key, val] of Object.entries(day)) {
+      if (typeof val !== "string") {
+        val.map((d, j) => (d === "M" ? sisterStnAveraged[i][key][j] : d))
+      }
+      return day
     }
+    return day
+  })
+  // console.log(results)
 
-    // forecast -----------------------------------
-    if (false) {
-      const forecastValues = flatten(forecast.map(arr => arr[i + 1]))
-      // replace missing values with forecast data. Adding 5 days as well
-      results = [...results, ...new Array(120).fill("M")]
-      results = results.map((val, j) => (val === "M" ? forecastValues[j] : val))
+  // // forecast -----------------------------------
+  if (forecast) {
+    forecast.slice(-5).forEach(day => results.push(day))
+    results = results.map((day, i) => {
+      for (let [key, val] of Object.entries(day)) {
+        if (typeof val !== "string") {
+          val.map((d, j) => (d === "M" ? forecast[i][key][j] : d))
+        }
+        return day
+      }
+      return day
+    })
+  }
+  // console.log(results)
+
+  let shifted = [...results]
+  shifted.forEach((day, i) => {
+    for (let [key, val] of Object.entries(day)) {
+      if (i !== shifted.length - 1) {
+        if (typeof val !== "string") {
+          const last = val.pop()
+          shifted[i + 1][key].unshift(last)
+        }
+      } else {
+        if (typeof val !== "string") {
+          val.pop()
+        }
+      }
     }
-
-    return results
   })
 
-  // dates --------------------
-  // let dates = currentStn.map(d => d[0])
+  let hourlyDataDST = []
+  shifted.slice(1).forEach(day => {
+    for (let h = 0; h < 24; h++) {
+      let p = {}
+      for (let [key, val] of Object.entries(day)) {
+        if (typeof val === "string") {
+          p[key] = formatTime(val, h, tzo)
+        } else {
+          p[key] = val[h]
+        }
+      }
+      hourlyDataDST.push(p)
+    }
+  })
 
-  // if (forecast) {
-  //   dates = forecast.map(d => d[0])
-  // }
-  // const hourlyDates = dates
-  //   .map(date => addHourToDate(date))
-  //   .reduce((acc, results) => [...acc, ...results], [])
-  // data = [hourlyDates, ...data]
+  // console.log(hourlyDataDST)
 
-  // // Shifting one hour forward (from UTC to local time)
-  // // and selecting the range of dates: (from yyyy-01-01 00:00 to current date + 5)
-  // const shifted = data.map((arr, i) => {
-  //   if (i !== 0) {
-  //     // weather parameters
-  //     return [arr[23], ...arr.slice(24, -1)]
-  //   }
-  //   // dates
-  //   return [arr[24], ...arr.slice(25)]
-  // })
-
-  // // convert UTC dates to DST
-  // const datesWithDST = shifted[0].map((date, i) => {
-  //   const dd = date.split(" ")
-  //   const ddd = dd[0]
-  //   const hour = Number(dd[1].slice(0, 2))
-
-  //   return formatTime(ddd, hour, tzo)
-  // })
-
-  // const hourlyData = datesWithDST.map((date, i) => {
-  //   let arr = [date]
-  //   shifted.slice(1).forEach(el => arr.push(Number(el[i])))
-  //   return arr
-  // })
-
-  // let dailyData = []
-  // hourlyData.forEach(hour => {
-  //   const h = Number(hour[0].slice(11, 13))
-  //   if (h === 0) {
-  //     let p = []
-  //     p.push(hour[0].slice(0, 10))
-  //     params.eleList.forEach((el, j) => {
-  //       p.push([hour[j + 1]])
-  //     })
-  //     dailyData.push(p)
-  //   } else {
-  //     const index = dailyData.length - 1
-  //     params.eleList.forEach((el, j) => {
-  //       dailyData[index][j + 1].push(hour[j + 1])
-  //     })
-  //   }
-  // })
-
-  // // console.log(dailyData)
-  // return { dailyData, hourlyData }
+  let dailyDataDST = []
+  hourlyDataDST.forEach(day => {
+    const h = Number(day["date"].slice(11, 13))
+    if (h === 0) {
+      let p = {}
+      Object.keys(day).forEach(key => {
+        p[key] = [day[key][0]]
+      })
+      p["date"] = day["date"].slice(0, 10)
+      dailyDataDST.push(p)
+    } else {
+      for (let [key, val] of Object.entries(day)) {
+        if (key !== "date") {
+          dailyDataDST[dailyDataDST.length - 1][key].push(val)
+        }
+      }
+    }
+  })
+  // console.log(dailyDataDST)
+  return { hourlyDataDST, dailyDataDST }
 }
