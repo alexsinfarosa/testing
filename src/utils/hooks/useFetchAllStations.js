@@ -18,6 +18,11 @@ export default function useFetchAllStations() {
         const result = await axios.get(
           `${window.location.protocol}//newa2.nrcc.cornell.edu/newaUtil/stateStationList/all`
         )
+
+        // const xxx = result.data.stations.filter(
+        //   s => s.network === "newa" && s.state === "NY"
+        // )
+        // console.log(xxx)
         if (!didCancel) {
           dispatch({
             type: "FETCH_SUCCESS",

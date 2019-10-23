@@ -22,7 +22,7 @@ const errorFromAcis = acis => {
 }
 
 // Fetch selected station hourly data ---------------------------------------------------
-export const fetchCurrentStationHourlyData = params => {
+const fetchCurrentStationHourlyData = params => {
   const url = `${protocol}//data.rcc-acis.org/StnData`
   return axios
     .post(url, params)
@@ -33,12 +33,25 @@ export const fetchCurrentStationHourlyData = params => {
     .catch(err => console.log("Failed to load station data ", err))
 }
 
+// const fetchSolarRadiationIcaoStations = params => {
+//   const url = `${protocol}//adhoc.rcc-acis.org/SolarRadiation`
+//   const { sid, sdate, edate } = params
+//   return axios(`${url}?sid=${sid}&sdate=${sdate}&edate=${edate}`)
+//     .then(res => console.log(res))
+//     .catch(err =>
+//       console.log("Failed to fetch solar radiation from ICAO station", err)
+//     )
+// }
+
 // Fetch sister station Id and network -----------------------------------------------------
 const fetchSisterStationIdAndNetwork = params => {
   const { id, network } = params
   const url = `${protocol}//newa2.nrcc.cornell.edu/newaUtil/stationSisterInfo`
   return axios(`${url}/${id}/${network}`)
-    .then(res => formatIdNetwork(res.data, params.eleList))
+    .then(res => {
+      console.log(res.data)
+      return formatIdNetwork(res.data, params.eleList)
+    })
     .catch(err =>
       console.log("Failed to load sister station id and network", err)
     )
@@ -55,12 +68,15 @@ export const fetchSisterStationHourlyData = async (
   let sisStations = []
   for (let [key, val] of Object.entries(idAndNetwork)) {
     const [id, network] = key.split(" ")
-    allStations.forEach(stn => {
-      if (stn.id === id && stn.network === network) {
-        const sisStn = setParams(stn, params.sdate, params.edate, val)
-        sisStations.push(sisStn)
-      }
-    })
+
+    const station = allStations.find(
+      stn => stn.id === id && stn.network === network
+    )
+
+    if (station) {
+      const sisStn = setParams(station, params.sdate, params.edate, val)
+      sisStations.push(sisStn)
+    }
   }
 
   let req = sisStations.map(stn => {
@@ -139,6 +155,7 @@ export default async (params, allStations) => {
 
   // get current station hourly data
   const currentStation = await fetchCurrentStationHourlyData(params)
+  // const solarRadiation = await fetchSolarRadiationIcaoStations(params)
   results["currentStn"] = currentStation.data
   results["tzo"] = currentStation.meta.tzo
 
@@ -202,6 +219,6 @@ export default async (params, allStations) => {
   // console.log(results)
   const cleaned = cleanFetchedData(results, params)
 
-  console.log(cleaned)
+  // console.log(cleaned)
   return cleaned
 }
