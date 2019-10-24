@@ -50,31 +50,46 @@ const IndexPage = () => {
     fetchHourlyData(station)
   }
 
-  const options = stations.map(stn => {
-    const Item = ({ stn }) => (
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <span>
-          {stn.name},{" "}
-          <span
-            style={{
-              fontWeight: "bold",
-              fontStyle: "italic",
-              fontSize: "0.8rem",
-            }}
-          >
-            {stn.state}
-          </span>
-        </span>
-        <span
-          style={{ textAlign: "right", color: "#CCCCCC", fontSize: "0.8rem" }}
-        >
-          {stn.network}
-        </span>
-      </div>
-    )
+  //Add your search logic here.
+  // const customFilter = (option, searchText) => {
+  //   console.log(option, searchText)
+  //   if (option.data.value.toLowerCase() === searchText) {
+  //     return true
+  //   } else {
+  //     return false
+  //   }
+  // }
 
-    return { value: stn.id, label: <Item stn={stn}></Item> }
+  const stationsFormatted = stations.map(stn => {
+    return { ...stn, value: stn.id, label: `${stn.name}, ${stn.state}` }
   })
+
+  // const options = stationsFormatted.map(stn => {
+  //   const Item = ({ stn }) => (
+  //     <div style={{ display: "flex", justifyContent: "space-between" }}>
+  //       <span>
+  //         {stn.label},{" "}
+  //         <span
+  //           style={{
+  //             fontWeight: "bold",
+  //             fontStyle: "italic",
+  //             fontSize: "0.8rem",
+  //           }}
+  //         >
+  //           {stn.state}
+  //         </span>
+  //       </span>
+  //       <span
+  //         style={{ textAlign: "right", color: "#CCCCCC", fontSize: "0.8rem" }}
+  //       >
+  //         {stn.network}
+  //       </span>
+  //     </div>
+  //   )
+
+  //   return { value: stn.id, label: <Item stn={stn}></Item> }
+  // })
+
   return (
     <div
       style={{
@@ -82,7 +97,27 @@ const IndexPage = () => {
       }}
     >
       <div style={{ margin: "auto", width: 400, marginBottom: 48 }}>
-        <Select options={options} onChange={handleChange} autoFocus></Select>
+        <Select
+          placeholder={"Select or Search a Station..."}
+          name="stations"
+          isSearchable
+          isClearable
+          isLoading={selectedStation.isLoading}
+          options={stationsFormatted}
+          onChange={handleChange}
+          autoFocus
+          loadingMessage={() => "Loading data"}
+          // filterOption={customFilter}
+          theme={theme => ({
+            ...theme,
+            borderRadius: 20,
+            colors: {
+              ...theme.colors,
+              // primary25: "orange",
+              // primary: "black",
+            },
+          })}
+        ></Select>
       </div>
 
       {isLoading && (
