@@ -49,7 +49,7 @@ const fetchSisterStationIdAndNetwork = params => {
   const url = `${protocol}//newa2.nrcc.cornell.edu/newaUtil/stationSisterInfo`
   return axios(`${url}/${id}/${network}`)
     .then(res => {
-      console.log(res.data)
+      // console.log(res.data)
       return formatIdNetwork(res.data, params.eleList)
     })
     .catch(err =>
@@ -79,26 +79,31 @@ export const fetchSisterStationHourlyData = async (
     }
   }
 
-  let req = sisStations.map(stn => {
-    return axiosWithDelimiter
-      .post(url, stn)
-      .then(res => {
-        // console.log(res.data)
-        return arrToObj(errorFromAcis(res.data), stn.eleList)
-      })
-      .catch(err => console.log("Failed to load sister station data ", err))
-  })
-
-  const res = await Promise.all(req)
-  if (res.length > 1) {
-    let first = [...res[0].data]
-    res.slice(1)[0].data.forEach((day, i) => {
-      delete day.date
-      first[i] = { ...first[i], ...day }
+  if (sisStations.length === 0) {
+    console.log("No sister station")
+  }
+  if (sisStations.length !== 0) {
+    let req = sisStations.map(stn => {
+      return axiosWithDelimiter
+        .post(url, stn)
+        .then(res => {
+          // console.log(res.data)
+          return arrToObj(errorFromAcis(res.data), stn.eleList)
+        })
+        .catch(err => console.log("Failed to load sister station data ", err))
     })
-    return first
-  } else {
-    return res[0].data
+
+    const res = await Promise.all(req)
+    if (res.length > 1) {
+      let first = [...res[0].data]
+      res.slice(1)[0].data.forEach((day, i) => {
+        delete day.date
+        first[i] = { ...first[i], ...day }
+      })
+      return first
+    } else {
+      return res[0].data
+    }
   }
 }
 

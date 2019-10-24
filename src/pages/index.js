@@ -12,7 +12,7 @@ import Table from "../components/table"
 
 const IndexPage = () => {
   // ALL STATIONS ---------------------------------------------------
-  const { data: stations } = useFetchAllStations()
+  const { data: stations, isLoading, isError } = useFetchAllStations()
 
   // SLECTED STATION ------------------------------------------------
   const [selectedStation, dispatchSelectedStation] = React.useReducer(
@@ -23,23 +23,21 @@ const IndexPage = () => {
       data: null,
     }
   )
-
-  const [stn, setStn] = React.useState(null)
+  // console.log(selectedStation)
 
   const fetchHourlyData = async stn => {
     const sdate = `${new Date().getFullYear() - 1}-12-31`
     const edate = `${format(new Date(), "yyyy-MM-dd")}`
     const eleList = ["temp", "rhum", "pcpn"]
     const params = setParams(stn, sdate, edate, eleList)
-    setStn(params)
 
     dispatchSelectedStation({ type: "FETCH_INIT" })
     try {
       const res = await fetchData(params, stations)
-      console.log(res)
+      // console.log(res)
       dispatchSelectedStation({
         type: "FETCH_SUCCESS",
-        payload: res,
+        payload: { res, params },
       })
     } catch (error) {
       dispatchSelectedStation({ type: "FETCH_FAILURE", error })
@@ -80,22 +78,43 @@ const IndexPage = () => {
   return (
     <div
       style={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
         padding: 24,
       }}
     >
-      <div style={{ width: 400, marginBottom: 148, background: "pink" }}>
+      <div style={{ margin: "auto", width: 400, marginBottom: 48 }}>
         <Select options={options} onChange={handleChange} autoFocus></Select>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
+      {isLoading && (
+        <div style={{ textAlign: "center" }}>Loading all stations...</div>
+      )}
+
+      {isError ? (
+        <div>There was an error loading the stations</div>
+      ) : (
         <div>
-          {selectedStation.data && <Table data={selectedStation.data}></Table>}
+          {selectedStation.isLoading ? (
+            <div style={{ textAlign: "center" }}>Loading data...</div>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+              }}
+            >
+              {selectedStation.data && (
+                <>
+                  <Table data={selectedStation.data.res}></Table>
+
+                  <pre>
+                    {JSON.stringify(selectedStation.data.params, null, 2)}
+                  </pre>
+                </>
+              )}
+            </div>
+          )}
         </div>
-        <div>{stn && <pre>{JSON.stringify(stn, null, 2)}</pre>}</div>
-      </div>
+      )}
     </div>
   )
 }
